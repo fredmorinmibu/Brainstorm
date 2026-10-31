@@ -92,6 +92,14 @@ function create_tabs(args)
 							current_option = Brainstorm.SETTINGS.autoreroll.searchTagID or 1,
 						}),
 						create_option_cycle({
+							label = "AutoReroll Search Tag Count",
+							scale = 0.8,
+							w = 4,
+							options = {1,2},
+							opt_callback = "change_search_tag_count",
+							current_option = Brainstorm.SETTINGS.autoreroll.searchTagCount or 1,
+						}),
+						create_option_cycle({
 							label = "AutoReroll Search Pack",
 							scale = 0.8,
 							w = 4,

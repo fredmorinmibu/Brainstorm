@@ -9,6 +9,11 @@ G.FUNCS.change_search_tag = function(x)
 	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
 end
 
+G.FUNCS.change_search_tag_count = function(x)
+	Brainstorm.SETTINGS.autoreroll.searchTagCount = x.to_val
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+end
+
 G.FUNCS.change_search_pack = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchPackID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchPack = Brainstorm.SearchPackList[x.to_val]
@@ -69,14 +74,18 @@ function Brainstorm.auto_reroll()
 			hashed_seed = pseudohash(seed_found),
 		}
 		if Brainstorm.SETTINGS.autoreroll.searchTag ~= "" then
-			-- Skip the tags the game culls from its pool (Multiplayer removes its own), so the pick matches the real one
-			_tag = pseudorandom_element(G.P_CENTER_POOLS["Tag"], Brainstorm.pseudoseed("Tag1" .. seed_found), {
-				in_pool = function(v)
-					return not (MP and MP.should_exclude_from_pool(v))
-				end,
-			}).key
-			if _tag ~= Brainstorm.SETTINGS.autoreroll.searchTag then
-				seed_found = nil
+			-- The first draw of "Tag1" is the Small Blind tag, the second the Big Blind tag
+			for i = 1, Brainstorm.SETTINGS.autoreroll.searchTagCount or 1 do
+				-- Skip the tags the game culls from its pool (Multiplayer removes its own), so the pick matches the real one
+				_tag = pseudorandom_element(G.P_CENTER_POOLS["Tag"], Brainstorm.pseudoseed("Tag1" .. seed_found), {
+					in_pool = function(v)
+						return not (MP and MP.should_exclude_from_pool(v))
+					end,
+				}).key
+				if _tag ~= Brainstorm.SETTINGS.autoreroll.searchTag then
+					seed_found = nil
+					break
+				end
 			end
 		end
 		if seed_found and Brainstorm.SETTINGS.autoreroll.searchForSoul then
