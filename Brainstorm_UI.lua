@@ -135,6 +135,7 @@ function create_tabs(args)
 			tab_definition_function = function()
 				local searchRareJokerKeys, rareJokerOption = Brainstorm.rare_joker_options()
 				local searchVoucherKeys, voucherOption = Brainstorm.voucher_options()
+				Brainstorm.update_estimate()
 				return {
 					n = G.UIT.ROOT,
 					config = {
@@ -261,6 +262,9 @@ function create_tabs(args)
 									current_option = Brainstorm.SETTINGS.autoreroll.seedsPerFrameID or 1,
 								}),
 							}},
+						}},
+						{n = G.UIT.R, config = {align = "cm", padding = 0.05}, nodes = {
+							{n = G.UIT.O, config = {object = DynaText({string = {{ref_table = Brainstorm, ref_value = "estimateText"}}, colours = {Brainstorm.estimateColour}, shadow = true, silent = true, scale = 0.4})}},
 						}},
 					},
 				}

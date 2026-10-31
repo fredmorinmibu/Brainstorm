@@ -42,6 +42,7 @@ function Brainstorm.key_press_update(key)
 		Brainstorm.AUTOREROLL.autoRerollActive = not Brainstorm.AUTOREROLL.autoRerollActive
 		if Brainstorm.AUTOREROLL.autoRerollActive then
 			Brainstorm.AUTOREROLL.seedsTried = 0
+			Brainstorm.AUTOREROLL.startTime = love.timer.getTime()
 		else
 			Brainstorm.clear_reroll_text()
 		end

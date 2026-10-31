@@ -5,6 +5,7 @@
 - Added: Legendary Edition search.
 - Added: First Shop Voucher search.
 - Added: search progress and a seed history file.
+- Added: a search time estimate in the Brainstorm tab, based on your own measured speed.
 - Fixed: stopping a search with Ctrl+A now removes the Rerolling text.
 
 ## 1.2.1

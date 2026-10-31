@@ -2,61 +2,67 @@ local lovely = require("lovely")
 local nativefs = require("nativefs")
 
 Brainstorm.AUTOREROLL = {}
+Brainstorm.estimateColour = {1, 1, 1, 1}
+
+function Brainstorm.save_settings()
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.update_estimate()
+end
 
 G.FUNCS.change_search_tag = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchTagID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchTag = Brainstorm.SearchTagList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_tag_count = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchTagCount = x.to_val
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_legendary_1 = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchLegendary1ID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchLegendary1 = Brainstorm.SearchLegendaryList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_legendary_2 = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchLegendary2ID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchLegendary2 = Brainstorm.SearchLegendaryList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_rare_joker = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchRareJoker = Brainstorm.SearchRareJokerList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_edition = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchEditionID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchEdition = Brainstorm.SearchEditionList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_voucher = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchVoucher = Brainstorm.SearchVoucherList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_pack = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchPackID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchPack = Brainstorm.SearchPackList[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_search_soul_count = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchForSoul = x.to_val
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 G.FUNCS.change_seeds_per_frame = function(x)
 	Brainstorm.SETTINGS.autoreroll.seedsPerFrameID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.seedsPerFrame = Brainstorm.seedsPerFrame[x.to_val]
-	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+	Brainstorm.save_settings()
 end
 
 Brainstorm.AUTOREROLL.autoRerollActive = false
@@ -194,6 +200,154 @@ function Brainstorm.next_voucher(seed_found, pool)
 	return voucher
 end
 
+local EDITION_ODDS = { e_foil = 0.02, e_holo = 0.014, e_polychrome = 0.003, e_negative = 0.003 }
+
+-- The share of seeds that pass the search. It follows the checks in auto_reroll, so keep them together
+function Brainstorm.search_odds()
+	local settings = Brainstorm.SETTINGS.autoreroll
+	local odds = 1
+	local tag_pool = 0
+	for _, v in ipairs(G.P_CENTER_POOLS["Tag"]) do
+		if not (MP and MP.should_exclude_from_pool(v)) then
+			tag_pool = tag_pool + 1
+		end
+	end
+	local search_tag = settings.searchTag or ""
+	local tag_count = settings.searchTagCount or 1
+	if search_tag ~= "" then
+		odds = odds * (1 / tag_pool) ^ tag_count
+	end
+	local rare_joker = settings.searchRareJoker or ""
+	if rare_joker ~= "" and tag_count < 2 then
+		local center = G.P_CENTERS[rare_joker]
+		if not center or center.unlocked == false then
+			return 0
+		end
+		local rares = 0
+		for _, v in ipairs(G.P_JOKER_RARITY_POOLS[3]) do
+			if v.unlocked ~= false and not (MP and MP.should_exclude_from_pool(v)) then
+				rares = rares + 1
+			end
+		end
+		if search_tag == "" then
+			-- Either skip can hold the Rare Tag
+			odds = odds * (2 - 1 / tag_pool) / tag_pool / rares
+		elseif search_tag == "tag_rare" then
+			odds = odds / rares
+		else
+			odds = odds / tag_pool / rares
+		end
+	end
+	local souls = settings.searchForSoul or 0
+	if souls > 0 then
+		odds = odds * (1 - 0.997 ^ 5) ^ souls
+		local legendaries = 0
+		for _, v in ipairs(G.P_JOKER_RARITY_POOLS[4]) do
+			if not (MP and MP.should_exclude_from_pool(v)) then
+				legendaries = legendaries + 1
+			end
+		end
+		local legendary1 = settings.searchLegendary1 or ""
+		local legendary2 = souls > 1 and settings.searchLegendary2 or ""
+		local two_picks = legendary1 ~= "" and legendary2 ~= "" and legendary1 ~= legendary2
+		if two_picks then
+			odds = odds * 2 / (legendaries * (legendaries - 1))
+		elseif legendary1 ~= "" then
+			odds = odds / legendaries
+		elseif legendary2 ~= "" then
+			odds = odds * 2 / legendaries
+		end
+		local edition = EDITION_ODDS[settings.searchEdition or ""]
+		if edition then
+			-- Two Legendaries get two chances, unless only one of them is wanted
+			local any_legendary = legendary1 == "" and legendary2 == ""
+			local chances = (souls > 1 and (any_legendary or two_picks)) and 2 or 1
+			odds = odds * (1 - (1 - edition) ^ chances)
+		end
+	end
+	local voucher = settings.searchVoucher or ""
+	if voucher ~= "" then
+		local pool = Brainstorm.voucher_pool()
+		if not Brainstorm.table_has(pool, voucher) then
+			return 0
+		end
+		local available = 0
+		for _, key in ipairs(pool) do
+			if key ~= "UNAVAILABLE" then
+				available = available + 1
+			end
+		end
+		odds = odds / available
+	end
+	if settings.searchPack and #settings.searchPack > 0 then
+		local total, matching = 0, 0
+		for _, v in ipairs(G.P_CENTER_POOLS["Booster"]) do
+			total = total + (v.weight or 1)
+			if Brainstorm.table_has(settings.searchPack, v.key) then
+				matching = matching + (v.weight or 1)
+			end
+		end
+		odds = odds * matching / total
+	end
+	return odds
+end
+
+-- Seeds per second: the player's own once measured, or a first guess at 60 frames per second
+function Brainstorm.search_speed()
+	local per_frame = Brainstorm.SETTINGS.autoreroll.seedsPerFrame or 1000
+	local measured = (Brainstorm.SETTINGS.measuredSpeed or {})[tostring(per_frame)]
+	if measured then
+		return measured.seeds / measured.seconds, true
+	end
+	return per_frame * 60, false
+end
+
+function Brainstorm.record_speed()
+	local started = Brainstorm.AUTOREROLL.startTime
+	Brainstorm.AUTOREROLL.startTime = nil
+	if not started then
+		return
+	end
+	local seconds = love.timer.getTime() - started
+	local seeds = Brainstorm.AUTOREROLL.seedsTried or 0
+	if seconds < 2 or seeds == 0 then
+		return
+	end
+	Brainstorm.SETTINGS.measuredSpeed = Brainstorm.SETTINGS.measuredSpeed or {}
+	local key = tostring(Brainstorm.SETTINGS.autoreroll.seedsPerFrame or 1000)
+	local measured = Brainstorm.SETTINGS.measuredSpeed[key] or { seeds = 0, seconds = 0 }
+	measured.seeds = measured.seeds + seeds
+	measured.seconds = measured.seconds + seconds
+	-- Halving keeps recent searches counting for more
+	if measured.seconds > 600 then
+		measured.seeds = measured.seeds / 2
+		measured.seconds = measured.seconds / 2
+	end
+	Brainstorm.SETTINGS.measuredSpeed[key] = measured
+	Brainstorm.save_settings()
+end
+
+function Brainstorm.update_estimate()
+	local odds = Brainstorm.search_odds()
+	local warn = false
+	if odds == 0 then
+		warn = true
+		Brainstorm.estimateText = "This search can't find a seed"
+	elseif odds == 1 then
+		Brainstorm.estimateText = "No search set"
+	else
+		local speed, measured = Brainstorm.search_speed()
+		local seconds = 1 / odds / speed
+		warn = seconds >= 3600
+		Brainstorm.estimateText = "Average " .. Brainstorm.format_count(1 / odds) .. " seeds, about "
+			.. Brainstorm.format_time(seconds) .. (measured and " at your speed" or "")
+	end
+	local colour = warn and G.C.RED or G.C.UI.TEXT_LIGHT
+	for i = 1, 4 do
+		Brainstorm.estimateColour[i] = colour[i]
+	end
+end
+
 function Brainstorm.stop_search(message)
 	Brainstorm.AUTOREROLL.autoRerollActive = false
 	Brainstorm.clear_reroll_text()
@@ -221,7 +375,9 @@ function Brainstorm.log_found_seed(seed_found, draws, rare_found)
 	if rare_found then
 		parts[#parts + 1] = "Rare Tag: " .. Brainstorm.center_name(rare_found)
 	end
-	parts[#parts + 1] = Brainstorm.format_count(Brainstorm.AUTOREROLL.seedsTried or 0) .. " seeds tried"
+	local started = Brainstorm.AUTOREROLL.startTime
+	local took = started and (", " .. Brainstorm.format_time(love.timer.getTime() - started)) or ""
+	parts[#parts + 1] = Brainstorm.format_count(Brainstorm.AUTOREROLL.seedsTried or 0) .. " seeds tried" .. took
 	love.filesystem.append("brainstorm_seeds.txt", table.concat(parts, " | ") .. "\n")
 end
 

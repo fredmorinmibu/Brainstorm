@@ -16,6 +16,7 @@ Based on Brainstorm v1.1.0-alpha (the `master` branch). Licensed under the Mozil
 - **Rare Tag Joker**: find a seed where a Rare Tag on an Ante 1 skip gives any Rare Joker you choose.
 - **Legendary Edition**: find a Soul Legendary with a chosen edition. Negative and Polychrome are each about 0.3%, Holographic 1.4% and Foil 2%. If you chose a Legendary, the edition has to be on that one. The Soul must be used in Ante 1.
 - **First Shop Voucher**: find a chosen Voucher in the first shop. The list shows what your current deck can offer.
+- **Search time estimate**: the Brainstorm tab shows the average seeds and time for your current options, and turns red for searches over an hour. It starts with a first guess, then uses the speed measured from your own searches. Averages vary: a search can easily take 2 or 3 times longer.
 - **Search progress and seed history**: the search shows how many seeds it has tried. Each found seed is added to `brainstorm_seeds.txt` in Balatro's save folder, with its deck, tags, Voucher and Soul results. Start a seeded run with that seed to replay it, with the same deck and stake.
 
 **Changed default**: the search pack now starts on None.

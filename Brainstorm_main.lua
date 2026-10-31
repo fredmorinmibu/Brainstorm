@@ -29,6 +29,7 @@ function Brainstorm.update(dt)
 end
 
 function Brainstorm.clear_reroll_text()
+	Brainstorm.record_speed()
 	Brainstorm.AUTOREROLL.autoRerollFrames = 0
 	if Brainstorm.AUTOREROLL.rerollText then
 		Brainstorm.remove_attention_text(Brainstorm.AUTOREROLL.rerollText)
@@ -37,12 +38,25 @@ function Brainstorm.clear_reroll_text()
 end
 
 function Brainstorm.format_count(count)
-	if count >= 1000000 then
+	if count >= 1000000000 then
+		return string.format("%.1fB", count / 1000000000)
+	elseif count >= 1000000 then
 		return string.format("%.1fM", count / 1000000)
 	elseif count >= 1000 then
 		return string.format("%dK", math.floor(count / 1000))
 	end
-	return tostring(count)
+	return tostring(math.floor(count))
+end
+
+function Brainstorm.format_time(seconds)
+	if seconds < 60 then
+		return "under a minute"
+	elseif seconds < 3600 then
+		return string.format("%d min", math.floor(seconds / 60 + 0.5))
+	elseif seconds < 172800 then
+		return string.format("%.1f hours", seconds / 3600)
+	end
+	return string.format("%d days", math.floor(seconds / 86400 + 0.5))
 end
 
 -- HELPER FUNCTIONS
