@@ -48,7 +48,7 @@ Provided as is. Issues are welcome, but updates are not guaranteed.
 
 2. Download the [latest release](https://github.com/fredmorinmibu/Brainstorm/releases/) of Brainstorm Plus.
 3. Remove any existing Brainstorm folder from `/Users/$USER/Library/Application Support/Balatro/Mods`, then unzip the file there.
-4. Check that the new folder's name is `Brainstorm`.
+4. Check that the new folder's name is `Brainstorm`, and that there is only one copy. If you see `Brainstorm 2`, the old folder is still there. Two copies crash the game.
 5. Reload the game to activate the mod.
 
 ## Features
