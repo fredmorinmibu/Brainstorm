@@ -8,3 +8,4 @@ First release of this fork, based on Brainstorm v1.1.0-alpha.
 - Fixed: the Soul check stops at the first Soul in a pack.
 - Added: Tag Count, First and Second Soul Legendary, Rare Tag Joker.
 - Changed: the search pack starts on None.
+- Fixed: a second installed copy of Brainstorm no longer loads the mod twice.

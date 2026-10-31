@@ -1,3 +1,9 @@
+-- Only one Brainstorm tab, even if an older copy loads this file twice
+if Brainstorm.UI_LOADED then
+	return
+end
+Brainstorm.UI_LOADED = true
+
 local lovely = require("lovely")
 local nativefs = require("nativefs")
 

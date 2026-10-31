@@ -6,6 +6,12 @@ Brainstorm.AUTOREROLL = {}
 local saveKeys = { "1", "2", "3", "4", "5" }
 
 function Brainstorm.key_press_update(key)
+	-- A second installed copy calls this twice for each key press
+	local press = key .. G.FRAMES.MOVE
+	if press == Brainstorm.last_press then
+		return
+	end
+	Brainstorm.last_press = press
 	-- Brainstorm Key Handler
 	for i, k in ipairs(saveKeys) do
 		--  SaveState
