@@ -53,6 +53,11 @@ Brainstorm.SearchLegendaryList = {
 	["Chicot"]="j_chicot",
 	["Perkeo"]="j_perkeo",
 }
+Brainstorm.SearchRareJokerList = {
+	["None"]="",
+	["Blueprint"]="j_blueprint",
+	["Brainstorm"]="j_brainstorm",
+}
 Brainstorm.seedsPerFrame = {
     ["500"] = 500,
     ["750"] = 750,
@@ -62,6 +67,7 @@ Brainstorm.seedsPerFrame = {
 local searchTagKeys = {"None", "Charm Tag", "Double Tag", "Uncommon Tag", "Rare Tag", "Holographic Tag", "Foil Tag", "Polychrome Tag", "Investment Tag", "Voucher Tag", "Boss Tag", "Juggle Tag", "Coupon Tag", "Economy Tag", "Skip Tag", "D6 Tag"}
 local searchPackKeys = {"None", "Arcana", "Celestial", "Standard", "Buffoon", "Spectral", "Normal Arcana", "Jumbo Arcana", "Mega Arcana", "Normal Celestial", "Jumbo Celestial", "Mega Celestial", "Normal Standard", "Jumbo Standard", "Mega Standard", "Normal Buffoon", "Jumbo Buffoon", "Mega Buffoon", "Normal Spectral", "Jumbo Spectral", "Mega Spectral"}
 local searchLegendaryKeys = {"Any", "Canio", "Triboulet", "Yorick", "Chicot", "Perkeo"}
+local searchRareJokerKeys = {"None", "Blueprint", "Brainstorm"}
 local seedsPerFrame = {"500", "750", "1000"}
 -- print(Brainstorm.FUNCS.inspect(searchTagKeys))
 
@@ -152,14 +158,28 @@ function create_tabs(args)
 								}),
 							}},
 						}},
-                        create_option_cycle({
-							label = "Rerolls per Frame",
-							scale = 0.8,
-							w = 4,
-							options = seedsPerFrame,
-							opt_callback = "change_seeds_per_frame",
-							current_option = Brainstorm.SETTINGS.autoreroll.seedsPerFrameID or 1,
-						}),
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Rare Tag Joker",
+									scale = 0.8,
+									w = 3,
+									options = searchRareJokerKeys,
+									opt_callback = "change_search_rare_joker",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchRareJokerID or 1,
+								}),
+							}},
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Rerolls per Frame",
+									scale = 0.8,
+									w = 3,
+									options = seedsPerFrame,
+									opt_callback = "change_seeds_per_frame",
+									current_option = Brainstorm.SETTINGS.autoreroll.seedsPerFrameID or 1,
+								}),
+							}},
+						}},
 					},
 				}
 			end,
