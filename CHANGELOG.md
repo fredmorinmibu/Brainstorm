@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1
+
+- Added: Rare Tag Joker now lists every Rare Joker, including those added by other mods.
+- Fixed: the search stops if the chosen Rare Joker is no longer in the game.
+
 ## 1.2.0 (Brainstorm Plus)
 
 First release of this fork, based on Brainstorm v1.1.0-alpha.

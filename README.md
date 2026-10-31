@@ -13,7 +13,7 @@ Based on Brainstorm v1.1.0-alpha (the `master` branch). Licensed under the Mozil
 **New auto-reroll options**
 - **Tag Count**: find the same tag on both Ante 1 skips.
 - **First and Second Soul Legendary**: choose which Legendary each Soul gives. Two different picks count in either order.
-- **Rare Tag Joker**: find a seed where a Rare Tag on an Ante 1 skip gives a chosen Joker (Blueprint or Brainstorm).
+- **Rare Tag Joker**: find a seed where a Rare Tag on an Ante 1 skip gives any Rare Joker you choose.
 
 **Changed default**: the search pack now starts on None.
 

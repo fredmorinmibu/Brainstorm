@@ -27,7 +27,6 @@ G.FUNCS.change_search_legendary_2 = function(x)
 end
 
 G.FUNCS.change_search_rare_joker = function(x)
-	Brainstorm.SETTINGS.autoreroll.searchRareJokerID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchRareJoker = Brainstorm.SearchRareJokerList[x.to_val]
 	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
 end
@@ -120,12 +119,13 @@ function Brainstorm.next_legendary(seed_found, owned)
 end
 
 function Brainstorm.auto_reroll()
-	-- A locked Joker never comes out of the Rare Tag, so that search could never end
+	-- A locked or removed Joker never comes out of the Rare Tag, so that search could never end
 	local wanted = Brainstorm.SETTINGS.autoreroll.searchRareJoker or ""
-	if wanted ~= "" and (Brainstorm.SETTINGS.autoreroll.searchTagCount or 1) < 2 and G.P_CENTERS[wanted].unlocked == false then
+	local center = G.P_CENTERS[wanted]
+	if wanted ~= "" and (Brainstorm.SETTINGS.autoreroll.searchTagCount or 1) < 2 and (not center or center.unlocked == false) then
 		Brainstorm.AUTOREROLL.autoRerollActive = false
 		Brainstorm.AUTOREROLL.autoRerollFrames = 0
-		saveManagerAlert(G.P_CENTERS[wanted].name .. " is locked on this profile")
+		saveManagerAlert((center and center.name or wanted) .. " is not available on this profile")
 		return nil
 	end
 	local rerollsThisFrame = 0

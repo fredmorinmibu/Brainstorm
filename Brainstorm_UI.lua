@@ -61,8 +61,6 @@ Brainstorm.SearchLegendaryList = {
 }
 Brainstorm.SearchRareJokerList = {
 	["None"]="",
-	["Blueprint"]="j_blueprint",
-	["Brainstorm"]="j_brainstorm",
 }
 Brainstorm.seedsPerFrame = {
     ["500"] = 500,
@@ -73,9 +71,29 @@ Brainstorm.seedsPerFrame = {
 local searchTagKeys = {"None", "Charm Tag", "Double Tag", "Uncommon Tag", "Rare Tag", "Holographic Tag", "Foil Tag", "Polychrome Tag", "Investment Tag", "Voucher Tag", "Boss Tag", "Juggle Tag", "Coupon Tag", "Economy Tag", "Skip Tag", "D6 Tag"}
 local searchPackKeys = {"None", "Arcana", "Celestial", "Standard", "Buffoon", "Spectral", "Normal Arcana", "Jumbo Arcana", "Mega Arcana", "Normal Celestial", "Jumbo Celestial", "Mega Celestial", "Normal Standard", "Jumbo Standard", "Mega Standard", "Normal Buffoon", "Jumbo Buffoon", "Mega Buffoon", "Normal Spectral", "Jumbo Spectral", "Mega Spectral"}
 local searchLegendaryKeys = {"Any", "Canio", "Triboulet", "Yorick", "Chicot", "Perkeo"}
-local searchRareJokerKeys = {"None", "Blueprint", "Brainstorm"}
 local seedsPerFrame = {"500", "750", "1000"}
 -- print(Brainstorm.FUNCS.inspect(searchTagKeys))
+
+-- Built from the game's own pool when the menu opens, so modded Rares are listed too
+function Brainstorm.rare_joker_options()
+	local names = {}
+	for _, v in ipairs(G.P_JOKER_RARITY_POOLS[3]) do
+		if not (MP and MP.should_exclude_from_pool(v)) then
+			local name = localize({ type = "name_text", set = "Joker", key = v.key })
+			names[#names + 1] = name
+			Brainstorm.SearchRareJokerList[name] = v.key
+		end
+	end
+	table.sort(names)
+	table.insert(names, 1, "None")
+	local saved = Brainstorm.SETTINGS.autoreroll.searchRareJoker or ""
+	for i, name in ipairs(names) do
+		if Brainstorm.SearchRareJokerList[name] == saved then
+			return names, i
+		end
+	end
+	return names, 1
+end
 
 Brainstorm.G_FUNCS_options_ref = G.FUNCS.options
 G.FUNCS.options = function(e)
@@ -87,6 +105,7 @@ function create_tabs(args)
 		args.tabs[#args.tabs + 1] = {
 			label = "Brainstorm",
 			tab_definition_function = function()
+				local searchRareJokerKeys, rareJokerOption = Brainstorm.rare_joker_options()
 				return {
 					n = G.UIT.ROOT,
 					config = {
@@ -169,17 +188,17 @@ function create_tabs(args)
 								create_option_cycle({
 									label = "Rare Tag Joker",
 									scale = 0.8,
-									w = 3,
+									w = 4,
 									options = searchRareJokerKeys,
 									opt_callback = "change_search_rare_joker",
-									current_option = Brainstorm.SETTINGS.autoreroll.searchRareJokerID or 1,
+									current_option = rareJokerOption,
 								}),
 							}},
 							{n = G.UIT.C, config = {align = "cm"}, nodes = {
 								create_option_cycle({
 									label = "Rerolls per Frame",
 									scale = 0.8,
-									w = 3,
+									w = 2,
 									options = seedsPerFrame,
 									opt_callback = "change_seeds_per_frame",
 									current_option = Brainstorm.SETTINGS.autoreroll.seedsPerFrameID or 1,
