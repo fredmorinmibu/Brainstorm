@@ -14,6 +14,18 @@ G.FUNCS.change_search_tag_count = function(x)
 	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
 end
 
+G.FUNCS.change_search_legendary_1 = function(x)
+	Brainstorm.SETTINGS.autoreroll.searchLegendary1ID = x.to_key
+	Brainstorm.SETTINGS.autoreroll.searchLegendary1 = Brainstorm.SearchLegendaryList[x.to_val]
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+end
+
+G.FUNCS.change_search_legendary_2 = function(x)
+	Brainstorm.SETTINGS.autoreroll.searchLegendary2ID = x.to_key
+	Brainstorm.SETTINGS.autoreroll.searchLegendary2 = Brainstorm.SearchLegendaryList[x.to_val]
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+end
+
 G.FUNCS.change_search_pack = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchPackID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchPack = Brainstorm.SearchPackList[x.to_val]
@@ -53,6 +65,23 @@ function FastReroll()
 	end
 	G:delete_run()
 	G:start_run({ stake = _stake, seed = _seed, challenge = _challenge })
+end
+
+-- Mimics create_card for The Soul: a Legendary already owned is unavailable, so the game resamples
+function Brainstorm.next_legendary(seed_found, owned)
+	local pool = {}
+	for _, v in ipairs(G.P_JOKER_RARITY_POOLS[4]) do
+		if not (MP and MP.should_exclude_from_pool(v)) then
+			pool[#pool + 1] = v.key
+		end
+	end
+	local legendary = pseudorandom_element(pool, Brainstorm.pseudoseed("Joker4" .. seed_found))
+	local it = 1
+	while legendary == owned do
+		it = it + 1
+		legendary = pseudorandom_element(pool, Brainstorm.pseudoseed("Joker4_resample" .. it .. seed_found))
+	end
+	return legendary
 end
 
 function Brainstorm.auto_reroll()
@@ -102,6 +131,30 @@ function Brainstorm.auto_reroll()
 				if not soul_found then
 					seed_found = nil
 					break
+				end
+			end
+		end
+		local souls = Brainstorm.SETTINGS.autoreroll.searchForSoul or 0
+		local legendary1 = Brainstorm.SETTINGS.autoreroll.searchLegendary1 or ""
+		local legendary2 = Brainstorm.SETTINGS.autoreroll.searchLegendary2 or ""
+		if seed_found and souls > 0 and (legendary1 ~= "" or (souls > 1 and legendary2 ~= "")) then
+			-- Souls give their Legendary in the order they are used, so the first pack's Soul is the first draw
+			local first = Brainstorm.next_legendary(seed_found)
+			if souls > 1 and legendary1 ~= "" and legendary2 ~= "" and legendary1 ~= legendary2 then
+				-- Two different picks count in either order
+				local other = (first == legendary1 and legendary2) or (first == legendary2 and legendary1)
+				if not other or Brainstorm.next_legendary(seed_found, first) ~= other then
+					seed_found = nil
+				end
+			else
+				if legendary1 ~= "" and first ~= legendary1 then
+					seed_found = nil
+				end
+				-- The second Legendary can never match the first, so the same pick twice only checks the first
+				if seed_found and souls > 1 and legendary2 ~= "" and legendary2 ~= first then
+					if Brainstorm.next_legendary(seed_found, first) ~= legendary2 then
+						seed_found = nil
+					end
 				end
 			end
 		end

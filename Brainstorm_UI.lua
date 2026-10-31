@@ -45,6 +45,14 @@ Brainstorm.SearchPackList = {
 	["Jumbo Spectral"] = {"p_spectral_jumbo_1"},
 	["Mega Spectral"] = {"p_spectral_mega_1"},
 }
+Brainstorm.SearchLegendaryList = {
+	["Any"]="",
+	["Canio"]="j_caino",
+	["Triboulet"]="j_triboulet",
+	["Yorick"]="j_yorick",
+	["Chicot"]="j_chicot",
+	["Perkeo"]="j_perkeo",
+}
 Brainstorm.seedsPerFrame = {
     ["500"] = 500,
     ["750"] = 750,
@@ -53,6 +61,7 @@ Brainstorm.seedsPerFrame = {
 
 local searchTagKeys = {"None", "Charm Tag", "Double Tag", "Uncommon Tag", "Rare Tag", "Holographic Tag", "Foil Tag", "Polychrome Tag", "Investment Tag", "Voucher Tag", "Boss Tag", "Juggle Tag", "Coupon Tag", "Economy Tag", "Skip Tag", "D6 Tag"}
 local searchPackKeys = {"None", "Arcana", "Celestial", "Standard", "Buffoon", "Spectral", "Normal Arcana", "Jumbo Arcana", "Mega Arcana", "Normal Celestial", "Jumbo Celestial", "Mega Celestial", "Normal Standard", "Jumbo Standard", "Mega Standard", "Normal Buffoon", "Jumbo Buffoon", "Mega Buffoon", "Normal Spectral", "Jumbo Spectral", "Mega Spectral"}
+local searchLegendaryKeys = {"Any", "Canio", "Triboulet", "Yorick", "Chicot", "Perkeo"}
 local seedsPerFrame = {"500", "750", "1000"}
 -- print(Brainstorm.FUNCS.inspect(searchTagKeys))
 
@@ -83,22 +92,28 @@ function create_tabs(args)
 								G.F_NO_ACHIEVEMENTS = Brainstorm.SETTINGS.debug_mode
 							end,
 						}),
-						create_option_cycle({
-							label = "AutoReroll Search Tag",
-							scale = 0.8,
-							w = 4,
-							options = searchTagKeys,
-							opt_callback = "change_search_tag",
-							current_option = Brainstorm.SETTINGS.autoreroll.searchTagID or 1,
-						}),
-						create_option_cycle({
-							label = "AutoReroll Search Tag Count",
-							scale = 0.8,
-							w = 4,
-							options = {1,2},
-							opt_callback = "change_search_tag_count",
-							current_option = Brainstorm.SETTINGS.autoreroll.searchTagCount or 1,
-						}),
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "AutoReroll Search Tag",
+									scale = 0.8,
+									w = 4,
+									options = searchTagKeys,
+									opt_callback = "change_search_tag",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchTagID or 1,
+								}),
+							}},
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Tag Count",
+									scale = 0.8,
+									w = 2,
+									options = {1,2},
+									opt_callback = "change_search_tag_count",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchTagCount or 1,
+								}),
+							}},
+						}},
 						create_option_cycle({
 							label = "AutoReroll Search Pack",
 							scale = 0.8,
@@ -115,6 +130,28 @@ function create_tabs(args)
 							opt_callback = "change_search_soul_count",
 							current_option = Brainstorm.SETTINGS.autoreroll.searchForSoul + 1 or 1,
 						}),
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "First Soul Legendary",
+									scale = 0.8,
+									w = 3,
+									options = searchLegendaryKeys,
+									opt_callback = "change_search_legendary_1",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchLegendary1ID or 1,
+								}),
+							}},
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Second Soul Legendary",
+									scale = 0.8,
+									w = 3,
+									options = searchLegendaryKeys,
+									opt_callback = "change_search_legendary_2",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchLegendary2ID or 1,
+								}),
+							}},
+						}},
                         create_option_cycle({
 							label = "Rerolls per Frame",
 							scale = 0.8,
