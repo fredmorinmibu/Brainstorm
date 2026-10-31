@@ -120,6 +120,14 @@ function Brainstorm.next_legendary(seed_found, owned)
 end
 
 function Brainstorm.auto_reroll()
+	-- A locked Joker never comes out of the Rare Tag, so that search could never end
+	local wanted = Brainstorm.SETTINGS.autoreroll.searchRareJoker or ""
+	if wanted ~= "" and (Brainstorm.SETTINGS.autoreroll.searchTagCount or 1) < 2 and G.P_CENTERS[wanted].unlocked == false then
+		Brainstorm.AUTOREROLL.autoRerollActive = false
+		Brainstorm.AUTOREROLL.autoRerollFrames = 0
+		saveManagerAlert(G.P_CENTERS[wanted].name .. " is locked on this profile")
+		return nil
+	end
 	local rerollsThisFrame = 0
 	-- This part is meant to mimic how Balatro rerolls for Gold Stake
 	local extra_num = -0.561892350821
@@ -168,7 +176,8 @@ function Brainstorm.auto_reroll()
 		-- Two search tags fill both skips, so there is no room for a Rare Tag
 		if seed_found and rare_joker ~= "" and tag_count < 2 then
 			local ante = nil
-			if Brainstorm.SETTINGS.autoreroll.searchTag == "" and Brainstorm.next_tag(seed_found) == "tag_rare" then
+			local search_tag = Brainstorm.SETTINGS.autoreroll.searchTag
+			if search_tag == "tag_rare" or (search_tag == "" and Brainstorm.next_tag(seed_found) == "tag_rare") then
 				-- Skip the Small Blind only: the Joker comes in the shop after the Big Blind, still Ante 1
 				ante = 1
 			elseif Brainstorm.next_tag(seed_found) == "tag_rare" then

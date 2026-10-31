@@ -1,7 +1,7 @@
 local lovely = require("lovely")
 local nativefs = require("nativefs")
 Brainstorm.INITIALIZED = true
-Brainstorm.VER = "Brainstorm v1.1.0-alpha"
+Brainstorm.VER = "Brainstorm Plus v1.2.0"
 
 function Brainstorm.update(dt)
 	if Brainstorm.AUTOREROLL.autoRerollActive then
