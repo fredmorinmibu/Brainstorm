@@ -40,5 +40,10 @@ function Brainstorm.key_press_update(key)
 	end
 	if key == Brainstorm.SETTINGS.keybinds.autoReroll and love.keyboard.isDown("lctrl") then
 		Brainstorm.AUTOREROLL.autoRerollActive = not Brainstorm.AUTOREROLL.autoRerollActive
+		if Brainstorm.AUTOREROLL.autoRerollActive then
+			Brainstorm.AUTOREROLL.seedsTried = 0
+		else
+			Brainstorm.clear_reroll_text()
+		end
 	end
 end

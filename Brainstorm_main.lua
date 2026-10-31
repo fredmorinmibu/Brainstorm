@@ -1,7 +1,7 @@
 local lovely = require("lovely")
 local nativefs = require("nativefs")
 Brainstorm.INITIALIZED = true
-Brainstorm.VER = "Brainstorm Plus v1.2.1"
+Brainstorm.VER = "Brainstorm Plus v1.3.0"
 
 function Brainstorm.update(dt)
 	if Brainstorm.AUTOREROLL.autoRerollActive then
@@ -12,20 +12,37 @@ function Brainstorm.update(dt)
 			seed_found = Brainstorm.auto_reroll()
 			if seed_found then
 				Brainstorm.AUTOREROLL.autoRerollActive = false
-				Brainstorm.AUTOREROLL.autoRerollFrames = 0
-				if Brainstorm.AUTOREROLL.rerollText then
-					Brainstorm.remove_attention_text(Brainstorm.AUTOREROLL.rerollText)
-					Brainstorm.AUTOREROLL.rerollText = nil
-				end
+				Brainstorm.clear_reroll_text()
 			end
 		end
 		Brainstorm.AUTOREROLL.autoRerollFrames = Brainstorm.AUTOREROLL.autoRerollFrames + 1
+		-- Once a second is enough: each change of the text replays its pop-in
+		if Brainstorm.AUTOREROLL.autoRerollFrames % 60 == 20 then
+			Brainstorm.AUTOREROLL.progressText = "Rerolling... " .. Brainstorm.format_count(Brainstorm.AUTOREROLL.seedsTried or 0) .. " seeds"
+		end
 		if Brainstorm.AUTOREROLL.autoRerollFrames == 20 then
 			Brainstorm.AUTOREROLL.rerollText = Brainstorm.attention_text({
-				scale = 1.4, text = "Rerolling...", align = 'cm', offset = {x = 0,y = -3.5},major = G.STAGE == G.STAGES.RUN and G.play or G.title_top
+				scale = 1.4, text = {{ref_table = Brainstorm.AUTOREROLL, ref_value = "progressText"}}, align = 'cm', offset = {x = 0,y = -3.5},major = G.STAGE == G.STAGES.RUN and G.play or G.title_top
 			})
 		end
 	end
+end
+
+function Brainstorm.clear_reroll_text()
+	Brainstorm.AUTOREROLL.autoRerollFrames = 0
+	if Brainstorm.AUTOREROLL.rerollText then
+		Brainstorm.remove_attention_text(Brainstorm.AUTOREROLL.rerollText)
+		Brainstorm.AUTOREROLL.rerollText = nil
+	end
+end
+
+function Brainstorm.format_count(count)
+	if count >= 1000000 then
+		return string.format("%.1fM", count / 1000000)
+	elseif count >= 1000 then
+		return string.format("%dK", math.floor(count / 1000))
+	end
+	return tostring(count)
 end
 
 -- HELPER FUNCTIONS

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.0
+
+- Added: Legendary Edition search.
+- Added: First Shop Voucher search.
+- Added: search progress and a seed history file.
+- Fixed: stopping a search with Ctrl+A now removes the Rerolling text.
+
 ## 1.2.1
 
 - Added: Rare Tag Joker now lists every Rare Joker, including those added by other mods.

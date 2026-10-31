@@ -62,6 +62,16 @@ Brainstorm.SearchLegendaryList = {
 Brainstorm.SearchRareJokerList = {
 	["None"]="",
 }
+Brainstorm.SearchVoucherList = {
+	["None"]="",
+}
+Brainstorm.SearchEditionList = {
+	["Any"]="",
+	["Foil"]="e_foil",
+	["Holographic"]="e_holo",
+	["Polychrome"]="e_polychrome",
+	["Negative"]="e_negative",
+}
 Brainstorm.seedsPerFrame = {
     ["500"] = 500,
     ["750"] = 750,
@@ -71,28 +81,46 @@ Brainstorm.seedsPerFrame = {
 local searchTagKeys = {"None", "Charm Tag", "Double Tag", "Uncommon Tag", "Rare Tag", "Holographic Tag", "Foil Tag", "Polychrome Tag", "Investment Tag", "Voucher Tag", "Boss Tag", "Juggle Tag", "Coupon Tag", "Economy Tag", "Skip Tag", "D6 Tag"}
 local searchPackKeys = {"None", "Arcana", "Celestial", "Standard", "Buffoon", "Spectral", "Normal Arcana", "Jumbo Arcana", "Mega Arcana", "Normal Celestial", "Jumbo Celestial", "Mega Celestial", "Normal Standard", "Jumbo Standard", "Mega Standard", "Normal Buffoon", "Jumbo Buffoon", "Mega Buffoon", "Normal Spectral", "Jumbo Spectral", "Mega Spectral"}
 local searchLegendaryKeys = {"Any", "Canio", "Triboulet", "Yorick", "Chicot", "Perkeo"}
+local searchEditionKeys = {"Any", "Foil", "Holographic", "Polychrome", "Negative"}
 local seedsPerFrame = {"500", "750", "1000"}
 -- print(Brainstorm.FUNCS.inspect(searchTagKeys))
 
--- Built from the game's own pool when the menu opens, so modded Rares are listed too
-function Brainstorm.rare_joker_options()
+-- Built from the game's own pools when the menu opens, so modded cards are listed too
+local function search_options(keys, set, list, saved)
 	local names = {}
-	for _, v in ipairs(G.P_JOKER_RARITY_POOLS[3]) do
-		if not (MP and MP.should_exclude_from_pool(v)) then
-			local name = localize({ type = "name_text", set = "Joker", key = v.key })
-			names[#names + 1] = name
-			Brainstorm.SearchRareJokerList[name] = v.key
-		end
+	for _, key in ipairs(keys) do
+		local name = localize({ type = "name_text", set = set, key = key })
+		names[#names + 1] = name
+		list[name] = key
 	end
 	table.sort(names)
 	table.insert(names, 1, "None")
-	local saved = Brainstorm.SETTINGS.autoreroll.searchRareJoker or ""
 	for i, name in ipairs(names) do
-		if Brainstorm.SearchRareJokerList[name] == saved then
+		if list[name] == saved then
 			return names, i
 		end
 	end
 	return names, 1
+end
+
+function Brainstorm.rare_joker_options()
+	local keys = {}
+	for _, v in ipairs(G.P_JOKER_RARITY_POOLS[3]) do
+		if not (MP and MP.should_exclude_from_pool(v)) then
+			keys[#keys + 1] = v.key
+		end
+	end
+	return search_options(keys, "Joker", Brainstorm.SearchRareJokerList, Brainstorm.SETTINGS.autoreroll.searchRareJoker or "")
+end
+
+function Brainstorm.voucher_options()
+	local keys = {}
+	for _, key in ipairs(Brainstorm.voucher_pool()) do
+		if key ~= "UNAVAILABLE" then
+			keys[#keys + 1] = key
+		end
+	end
+	return search_options(keys, "Voucher", Brainstorm.SearchVoucherList, Brainstorm.SETTINGS.autoreroll.searchVoucher or "")
 end
 
 Brainstorm.G_FUNCS_options_ref = G.FUNCS.options
@@ -106,6 +134,7 @@ function create_tabs(args)
 			label = "Brainstorm",
 			tab_definition_function = function()
 				local searchRareJokerKeys, rareJokerOption = Brainstorm.rare_joker_options()
+				local searchVoucherKeys, voucherOption = Brainstorm.voucher_options()
 				return {
 					n = G.UIT.ROOT,
 					config = {
@@ -145,22 +174,50 @@ function create_tabs(args)
 								}),
 							}},
 						}},
-						create_option_cycle({
-							label = "AutoReroll Search Pack",
-							scale = 0.8,
-							w = 4,
-							options = searchPackKeys,
-							opt_callback = "change_search_pack",
-							current_option = Brainstorm.SETTINGS.autoreroll.searchPackID or 1,
-						}),
-						create_option_cycle({
-							label = "Charm Tag/Arcana Pack: Number of Souls",
-							scale = 0.8,
-							w = 4,
-							options = {0,1,2},
-							opt_callback = "change_search_soul_count",
-							current_option = Brainstorm.SETTINGS.autoreroll.searchForSoul + 1 or 1,
-						}),
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "AutoReroll Search Pack",
+									scale = 0.8,
+									w = 4,
+									options = searchPackKeys,
+									opt_callback = "change_search_pack",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchPackID or 1,
+								}),
+							}},
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "First Shop Voucher",
+									scale = 0.8,
+									w = 3,
+									options = searchVoucherKeys,
+									opt_callback = "change_search_voucher",
+									current_option = voucherOption,
+								}),
+							}},
+						}},
+						{n = G.UIT.R, config = {align = "cm"}, nodes = {
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Number of Souls",
+									scale = 0.8,
+									w = 2,
+									options = {0,1,2},
+									opt_callback = "change_search_soul_count",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchForSoul + 1 or 1,
+								}),
+							}},
+							{n = G.UIT.C, config = {align = "cm"}, nodes = {
+								create_option_cycle({
+									label = "Legendary Edition",
+									scale = 0.8,
+									w = 3,
+									options = searchEditionKeys,
+									opt_callback = "change_search_edition",
+									current_option = Brainstorm.SETTINGS.autoreroll.searchEditionID or 1,
+								}),
+							}},
+						}},
 						{n = G.UIT.R, config = {align = "cm"}, nodes = {
 							{n = G.UIT.C, config = {align = "cm"}, nodes = {
 								create_option_cycle({

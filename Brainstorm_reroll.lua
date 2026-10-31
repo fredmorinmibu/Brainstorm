@@ -31,6 +31,17 @@ G.FUNCS.change_search_rare_joker = function(x)
 	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
 end
 
+G.FUNCS.change_search_edition = function(x)
+	Brainstorm.SETTINGS.autoreroll.searchEditionID = x.to_key
+	Brainstorm.SETTINGS.autoreroll.searchEdition = Brainstorm.SearchEditionList[x.to_val]
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+end
+
+G.FUNCS.change_search_voucher = function(x)
+	Brainstorm.SETTINGS.autoreroll.searchVoucher = Brainstorm.SearchVoucherList[x.to_val]
+	nativefs.write(lovely.mod_dir .. "/Brainstorm/settings.lua", STR_PACK(Brainstorm.SETTINGS))
+end
+
 G.FUNCS.change_search_pack = function(x)
 	Brainstorm.SETTINGS.autoreroll.searchPackID = x.to_key
 	Brainstorm.SETTINGS.autoreroll.searchPack = Brainstorm.SearchPackList[x.to_val]
@@ -118,16 +129,118 @@ function Brainstorm.next_legendary(seed_found, owned)
 	return legendary
 end
 
+-- The edition roll of a Legendary from The Soul, used in Ante 1
+function Brainstorm.next_legendary_edition(seed_found)
+	local poll = pseudorandom(Brainstorm.pseudoseed("edisou1" .. seed_found))
+	if poll > 0.997 then
+		return "e_negative"
+	elseif poll > 0.994 then
+		return "e_polychrome"
+	elseif poll > 0.98 then
+		return "e_holo"
+	elseif poll > 0.96 then
+		return "e_foil"
+	end
+	return ""
+end
+
+-- The Voucher pool at the start of a run on this deck or challenge, whatever has been bought since
+function Brainstorm.voucher_pool()
+	local used = {}
+	local back = G.GAME.selected_back
+	local config = back and back.effect and back.effect.config or {}
+	if config.voucher then
+		used[config.voucher] = true
+	end
+	for _, v in pairs(config.vouchers or {}) do
+		used[v] = true
+	end
+	for _, v in ipairs(G.GAME.challenge_tab and G.GAME.challenge_tab.vouchers or {}) do
+		used[v.id] = true
+	end
+	local banned = G.GAME.banned_keys or {}
+	local pool = {}
+	for _, v in ipairs(G.P_CENTER_POOLS["Voucher"]) do
+		if not (MP and MP.should_exclude_from_pool(v)) then
+			local available = v.unlocked ~= false and not used[v.key] and not banned[v.key]
+			for _, required in pairs(v.requires or {}) do
+				if not used[required] then
+					available = false
+				end
+			end
+			pool[#pool + 1] = available and v.key or "UNAVAILABLE"
+		end
+	end
+	return pool
+end
+
+function Brainstorm.table_has(list, value)
+	for _, v in ipairs(list) do
+		if v == value then
+			return true
+		end
+	end
+	return false
+end
+
+-- Mimics SMODS.get_next_vouchers for the first shop
+function Brainstorm.next_voucher(seed_found, pool)
+	local voucher = pseudorandom_element(pool, Brainstorm.pseudoseed("Voucher1" .. seed_found))
+	local it = 1
+	while voucher == "UNAVAILABLE" do
+		it = it + 1
+		voucher = pseudorandom_element(pool, Brainstorm.pseudoseed("Voucher1_resample" .. it .. seed_found))
+	end
+	return voucher
+end
+
+function Brainstorm.stop_search(message)
+	Brainstorm.AUTOREROLL.autoRerollActive = false
+	Brainstorm.clear_reroll_text()
+	saveManagerAlert(message)
+end
+
+function Brainstorm.center_name(key)
+	return G.P_CENTERS[key] and G.P_CENTERS[key].name or key
+end
+
+-- Kept in Balatro's save folder, so updating the mod doesn't lose the history
+function Brainstorm.log_found_seed(seed_found, draws, rare_found)
+	local parts = {
+		os.date("%Y-%m-%d %H:%M"),
+		seed_found,
+		G.GAME.selected_back.name,
+		"Stake " .. G.GAME.stake,
+		"Tags: " .. G.P_TAGS[G.GAME.round_resets.blind_tags.Small].name .. ", " .. G.P_TAGS[G.GAME.round_resets.blind_tags.Big].name,
+		"Voucher: " .. Brainstorm.center_name(G.GAME.current_round.voucher[1]),
+	}
+	for i, draw in ipairs(draws or {}) do
+		local edition = draw.edition ~= "" and (Brainstorm.center_name(draw.edition) .. " ") or ""
+		parts[#parts + 1] = "Soul " .. i .. ": " .. edition .. Brainstorm.center_name(draw.joker)
+	end
+	if rare_found then
+		parts[#parts + 1] = "Rare Tag: " .. Brainstorm.center_name(rare_found)
+	end
+	parts[#parts + 1] = Brainstorm.format_count(Brainstorm.AUTOREROLL.seedsTried or 0) .. " seeds tried"
+	love.filesystem.append("brainstorm_seeds.txt", table.concat(parts, " | ") .. "\n")
+end
+
 function Brainstorm.auto_reroll()
 	-- A locked or removed Joker never comes out of the Rare Tag, so that search could never end
 	local wanted = Brainstorm.SETTINGS.autoreroll.searchRareJoker or ""
 	local center = G.P_CENTERS[wanted]
 	if wanted ~= "" and (Brainstorm.SETTINGS.autoreroll.searchTagCount or 1) < 2 and (not center or center.unlocked == false) then
-		Brainstorm.AUTOREROLL.autoRerollActive = false
-		Brainstorm.AUTOREROLL.autoRerollFrames = 0
-		saveManagerAlert((center and center.name or wanted) .. " is not available on this profile")
+		Brainstorm.stop_search((center and center.name or wanted) .. " is not available on this profile")
 		return nil
 	end
+	-- Same for a Voucher this deck can't offer in its first shop
+	local voucher = Brainstorm.SETTINGS.autoreroll.searchVoucher or ""
+	local voucher_pool = voucher ~= "" and Brainstorm.voucher_pool()
+	if voucher_pool and not Brainstorm.table_has(voucher_pool, voucher) then
+		Brainstorm.stop_search(Brainstorm.center_name(voucher) .. " can't be in the first shop on this deck")
+		return nil
+	end
+	local draws, rare_found = nil, nil
 	local rerollsThisFrame = 0
 	-- This part is meant to mimic how Balatro rerolls for Gold Stake
 	local extra_num = -0.561892350821
@@ -184,20 +297,30 @@ function Brainstorm.auto_reroll()
 				-- Skipping the Big Blind puts it in the shop after the Boss, which is already Ante 2
 				ante = 2
 			end
-			if not ante or Brainstorm.next_rare_tag_joker(seed_found, ante) ~= rare_joker then
+			rare_found = ante and Brainstorm.next_rare_tag_joker(seed_found, ante)
+			if rare_found ~= rare_joker then
 				seed_found = nil
 			end
 		end
 		local souls = Brainstorm.SETTINGS.autoreroll.searchForSoul or 0
 		local legendary1 = Brainstorm.SETTINGS.autoreroll.searchLegendary1 or ""
 		local legendary2 = Brainstorm.SETTINGS.autoreroll.searchLegendary2 or ""
+		local edition = Brainstorm.SETTINGS.autoreroll.searchEdition or ""
+		draws = {}
+		if seed_found then
+			-- Souls give their Legendary and its edition in the order they are used
+			for i = 1, souls do
+				local joker = Brainstorm.next_legendary(seed_found, draws[1] and draws[1].joker)
+				draws[i] = { joker = joker, edition = Brainstorm.next_legendary_edition(seed_found) }
+			end
+		end
 		if seed_found and souls > 0 and (legendary1 ~= "" or (souls > 1 and legendary2 ~= "")) then
-			-- Souls give their Legendary in the order they are used, so the first pack's Soul is the first draw
-			local first = Brainstorm.next_legendary(seed_found)
+			local first = draws[1].joker
+			local second = draws[2] and draws[2].joker
 			if souls > 1 and legendary1 ~= "" and legendary2 ~= "" and legendary1 ~= legendary2 then
 				-- Two different picks count in either order
 				local other = (first == legendary1 and legendary2) or (first == legendary2 and legendary1)
-				if not other or Brainstorm.next_legendary(seed_found, first) ~= other then
+				if not other or second ~= other then
 					seed_found = nil
 				end
 			else
@@ -206,11 +329,28 @@ function Brainstorm.auto_reroll()
 				end
 				-- The second Legendary can never match the first, so the same pick twice only checks the first
 				if seed_found and souls > 1 and legendary2 ~= "" and legendary2 ~= first then
-					if Brainstorm.next_legendary(seed_found, first) ~= legendary2 then
+					if second ~= legendary2 then
 						seed_found = nil
 					end
 				end
 			end
+		end
+		if seed_found and souls > 0 and edition ~= "" then
+			-- With a Legendary chosen, the edition has to be on that Legendary
+			local any_legendary = legendary1 == "" and (souls < 2 or legendary2 == "")
+			local edition_found = false
+			for _, draw in ipairs(draws) do
+				local chosen = any_legendary or draw.joker == legendary1 or (souls > 1 and draw.joker == legendary2)
+				if chosen and draw.edition == edition then
+					edition_found = true
+				end
+			end
+			if not edition_found then
+				seed_found = nil
+			end
+		end
+		if seed_found and voucher ~= "" and Brainstorm.next_voucher(seed_found, voucher_pool) ~= voucher then
+			seed_found = nil
 		end
 		if seed_found and Brainstorm.SETTINGS.autoreroll.searchPack and #Brainstorm.SETTINGS.autoreroll.searchPack > 0 then
 		    local cume, it, center = 0, 0, nil
@@ -250,6 +390,7 @@ break end
 			return center
 		]]
 	end
+	Brainstorm.AUTOREROLL.seedsTried = (Brainstorm.AUTOREROLL.seedsTried or 0) + rerollsThisFrame
 	if seed_found then
 		_stake = G.GAME.stake
 		G:delete_run()
@@ -259,6 +400,8 @@ break end
 			challenge = G.GAME and G.GAME.challenge and G.GAME.challenge_tab,
 		})
 		G.GAME.seeded = false
+		pcall(Brainstorm.log_found_seed, seed_found, draws, rare_found)
+		saveManagerAlert("Found " .. seed_found .. " after " .. Brainstorm.format_count(Brainstorm.AUTOREROLL.seedsTried) .. " seeds")
 	end
 	return seed_found
 end
